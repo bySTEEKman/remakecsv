@@ -6,15 +6,16 @@ const read = [];
 const answ = [];
 const result = [];
 const dates = [];
+const header = [];
 
 //модуль читання csv
 fs.createReadStream('old.csv')
     .pipe(csv(['Name', 'Date', 'Time']))
     .on('data', (data) => read.push(data))
     .on('end', () => {
-        //№1 сортування по іменам
+        //сортування по іменам
         read.sort((a, b) => a.Name.toLowerCase() > b.Name.toLowerCase() ? 1 : -1);
-        //№2 зміна назв властивостей
+        //зміна назв властивостей
         function makeNewObj(res){
             let obj = {};
             let formateDate = moment(`${res.Date}`).format('YYYY-MM-DD');
@@ -23,19 +24,20 @@ fs.createReadStream('old.csv')
             answ.push(obj);
         }
         read.forEach(makeNewObj);
-        //№3 сортування імен
+        //сортування імен
         function noRepeat(object){
             let j = 0;
             const hash = {};
             let ransw = [];
-            //№4 формування масивів по іменам
+            //формування масивів по іменам
             for(let i = 0; i < object.length; i++){
                 let now = Object.entries(object[i]);
                 if (now[0][1] === 'Employee Name'){
                     break;
                 }
-                if(!(now[1][0] in dates)){
-                    dates[now[1][0]] = true;
+                if(!(now[1][0] in hash)){
+                    hash[now[1][0]] = true;
+                    dates.push(now[1][0]);
                 }
                 if (!(now[0] in hash)){
                     if(i === 0){
@@ -50,23 +52,33 @@ fs.createReadStream('old.csv')
                     ransw[j].push(now[1]);
                 }
             }
-            for(let i = 0; i < ransw.length; i++){              //перетворення масивів в обєкти
+            //перетворення масивів в обєкти
+            for(let i = 0; i < ransw.length; i++){
                 let pushing = {};
                 for (let y = 0; y < ransw[i].length; y++) {
                     let keyword = ransw[i][y][0];
-                    let value = ransw[i][y][1];
-                    pushing[keyword] = value;
+                    pushing[keyword] = ransw[i][y][1];
                 }
-                resultat.push(pushing);
+                result.push(pushing);
             }
         }
         noRepeat(answ);
+        function addMoreHeader(array){
+            let felement = {id: 'name', title: 'Name/Date'};
+            header.push(felement);
+            for(let i = 0; i < array.length; i++){
+                let obj = {};
+                obj.id = array[i];
+                obj.title = array[i];
+                header.push(obj);
+            }
+        }
+        //додавання обєктів в масив header
+        addMoreHeader(dates);
         //модуль запису csv
         const csvWriter = createCsvWriter({
             path: 'done.csv',
-            header: [
-                {id: 'name', title: 'Name/Date'},
-            ]
+            header
         });
 
 
@@ -74,5 +86,5 @@ fs.createReadStream('old.csv')
             .then(() => {
                 console.log('...Done');
             });
-        console.log(result);
+        //console.log(result);
     });
